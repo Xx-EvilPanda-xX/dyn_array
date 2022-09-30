@@ -2,6 +2,9 @@ use std::iter::Iterator;
 use std::iter::IntoIterator;
 use std::ops::{Index, IndexMut};
 
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug)]
 pub struct DynArray<T, const D: usize> {
     dims: [usize; D],
@@ -114,6 +117,11 @@ pub struct Iter<'a, T, const D: usize> {
     index: [usize; D],
 }
 
+pub struct IterOwned<T, const D: usize> {
+    arr: DynArray<T, D>,
+    index: [usize; D]
+}
+
 impl<'a, T, const D: usize> Iterator for Iter<'a, T, D> {
     type Item = ([usize; D], &'a T);
     
@@ -125,20 +133,7 @@ impl<'a, T, const D: usize> Iterator for Iter<'a, T, D> {
         }
 
         let ret = Some((*index, self.arr.index(*index)));
-
-        for i in (0..dims.len()).rev() {
-            index[i] += 1;
-            if index[i] >= dims[i] {
-                if i != 0 {
-                    index[i] = 0;
-                }
-
-                continue;
-            } else {
-                break;
-            }
-        }
-
+        next_index(index, dims);
         ret
     }
 }
@@ -151,6 +146,48 @@ impl<'a, T, const D: usize> IntoIterator for &'a DynArray<T, D> {
         Iter {
             arr: self,
             index: [0; D]
+        }
+    }
+}
+
+impl<T: Default, const D: usize> Iterator for IterOwned<T, D> {
+    type Item = ([usize; D], T);
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = &mut self.index;
+        if !check_index(self.arr.dims(), index) {
+            return None;
+        }
+        
+        let ret = Some((*index, std::mem::take(self.arr.index_mut(*index))));
+        next_index(index, self.arr.dims());
+        ret
+    }
+}
+
+impl<T: Default, const D: usize> IntoIterator for DynArray<T, D> {
+    type Item = <IterOwned<T, D> as Iterator>::Item;
+    type IntoIter = IterOwned<T, D>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterOwned {
+            arr: self,
+            index: [0; D]
+        }
+    }
+}
+
+fn next_index(index: &mut [usize], dims: &[usize]) {
+    for i in (0..dims.len()).rev() {
+        index[i] += 1;
+        if index[i] >= dims[i] {
+            if i != 0 {
+                index[i] = 0;
+            }
+
+            continue;
+        } else {
+            break;
         }
     }
 }
