@@ -2,6 +2,7 @@ use std::iter::Iterator;
 use std::iter::IntoIterator;
 use std::ops::{Index, IndexMut};
 
+#[derive(Debug)]
 pub struct DynArray<T, const D: usize> {
     dims: [usize; D],
     data: Vec<T>,
