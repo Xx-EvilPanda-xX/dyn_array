@@ -39,6 +39,10 @@ impl<T: Clone, const D: usize> DynArray<T, D> {
     }
 
     pub fn new_from_data(dims: [usize; D], data: Vec<T>) -> Self {
+        if dims.len() == 0 {
+            panic!("cannot have an array with 0 dimensions");
+        }
+
         if data.len() != dims.iter().product() {
             panic!("Vec len not equal to dimensions");
         }
@@ -55,6 +59,32 @@ impl<T, const D: usize> DynArray<T, D> {
         &self.dims
     }
 
+    pub fn data(&self) -> &[T] {
+        &self.data
+    }
+
+    pub fn data_mut(&mut self) -> &mut [T] {
+        &mut self.data
+    }
+}
+
+impl<T> DynArray<T, 1> {
+    pub fn width(&self) -> usize {
+        self.dims[0]
+    }
+}
+
+impl<T> DynArray<T, 2> {
+    pub fn width(&self) -> usize {
+        self.dims[0]
+    }
+
+    pub fn height(&self) -> usize {
+        self.dims[1]
+    }
+}
+
+impl<T> DynArray<T, 3> {
     pub fn width(&self) -> usize {
         self.dims[0]
     }
@@ -63,12 +93,8 @@ impl<T, const D: usize> DynArray<T, D> {
         self.dims[1]
     }
 
-    pub fn data(&self) -> &[T] {
-        &self.data
-    }
-
-    pub fn data_mut(&mut self) -> &mut [T] {
-        &mut self.data
+    pub fn depth(&self) -> usize {
+        self.dims[2]
     }
 }
 
