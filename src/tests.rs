@@ -10,6 +10,13 @@ fn iterate() {
         }
     }
 
+    let mut it = arr.iter_mut();
+    let i = it.next().unwrap();
+    i.1.push('#');
+    // big no no. not possible under normal circumstances
+    it.arr[[0, 0, 0]].push('$');
+    println!("{}", i.1);
+
     arr[[2, 2, 2]] = String::from("bye");
     for (i, c) in arr {
         if i == [2, 2, 2] {

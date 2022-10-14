@@ -66,6 +66,14 @@ impl<T, const D: usize> DynArray<T, D> {
     pub fn data_mut(&mut self) -> &mut [T] {
         &mut self.data
     }
+
+    pub fn iter<'a>(&'a self) -> Iter<'a, T, D> {
+        self.into_iter()
+    }
+
+    pub fn iter_mut<'a>(&'a mut self) -> IterMut<'a, T, D> {
+        self.into_iter()
+    }
 }
 
 impl<T> DynArray<T, 1> {
@@ -143,9 +151,14 @@ pub struct Iter<'a, T, const D: usize> {
     index: [usize; D],
 }
 
+pub struct IterMut<'a, T, const D: usize> {
+    arr: &'a mut DynArray<T, D>,
+    index: [usize; D],
+}
+
 pub struct IterOwned<T, const D: usize> {
     arr: DynArray<T, D>,
-    index: [usize; D]
+    index: [usize; D],
 }
 
 impl<'a, T, const D: usize> Iterator for Iter<'a, T, D> {
@@ -170,6 +183,37 @@ impl<'a, T, const D: usize> IntoIterator for &'a DynArray<T, D> {
 
     fn into_iter(self) -> Self::IntoIter {
         Iter {
+            arr: self,
+            index: [0; D]
+        }
+    }
+}
+
+impl<'a, T, const D: usize> Iterator for IterMut<'a, T, D> {
+    type Item = ([usize; D], &'a mut T);
+    
+    fn next(&mut self) -> Option<Self::Item> {
+        let index = &mut self.index;
+        if !check_index(self.arr.dims(), index) {
+            return None;
+        }
+
+        let ret = self.arr.index_mut(*index) as *mut T;
+        next_index(index, self.arr.dims());
+        // SAFETY: return value is still bound by 'a and therfore can't be invalid.
+        // Internal ref held by IterMut must not be accessed while a ref is given out
+        // by this associated function. Under normal circumstances, this shouldn't be
+        // possible as it is a private field.
+        Some((*index, unsafe { &mut *ret }))
+    }
+}
+
+impl<'a, T, const D: usize> IntoIterator for &'a mut DynArray<T, D> {
+    type Item = <IterMut<'a, T, D> as Iterator>::Item;
+    type IntoIter = IterMut<'a, T, D>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut {
             arr: self,
             index: [0; D]
         }
