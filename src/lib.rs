@@ -198,13 +198,14 @@ impl<'a, T, const D: usize> Iterator for IterMut<'a, T, D> {
             return None;
         }
 
-        let ret = self.arr.index_mut(*index) as *mut T;
+        let idx = *index;
+        let elem = self.arr.index_mut(idx) as *mut T;
         next_index(index, self.arr.dims());
         // SAFETY: return value is still bound by 'a and therfore can't be invalid.
         // Internal ref held by IterMut must not be accessed while a ref is given out
         // by this associated function. Under normal circumstances, this shouldn't be
         // possible as it is a private field.
-        Some((*index, unsafe { &mut *ret }))
+        Some((idx, unsafe { &mut *elem }))
     }
 }
 
