@@ -121,7 +121,7 @@ impl<T, const D: usize> IndexMut<[usize; D]> for DynArray<T, D> {
 
 fn get_index(dims: &[usize], index: &[usize]) -> usize {
     if !check_index(dims, index) {
-        panic!("index out of bounds");   
+        panic!("index out of bounds");
     }
 
     let mut idx = 0;
@@ -249,10 +249,12 @@ impl<T: Default, const D: usize> IntoIterator for DynArray<T, D> {
 }
 
 fn next_index(index: &mut [usize], dims: &[usize]) {
-    for i in (0..dims.len()).rev() {
+    assert_eq!(index.len(), dims.len());
+
+    for i in 0..dims.len() {
         index[i] += 1;
         if index[i] >= dims[i] {
-            if i != 0 {
+            if i != dims.len() - 1 {
                 index[i] = 0;
             }
 
