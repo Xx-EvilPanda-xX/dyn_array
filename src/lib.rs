@@ -8,7 +8,7 @@ mod tests;
 #[derive(Debug)]
 pub struct DynArray<T, const D: usize> {
     dims: [usize; D],
-    data: Vec<T>,
+    data: Box<[T]>,
 }
 
 impl<T: Clone, const D: usize> Clone for DynArray<T, D> {
@@ -34,7 +34,7 @@ impl<T: Clone, const D: usize> DynArray<T, D> {
 
         Self {
             dims,
-            data: std::vec::from_elem(x, vec_len),
+            data: vec![x; vec_len].into_boxed_slice()
         }
     }
 
@@ -49,7 +49,7 @@ impl<T: Clone, const D: usize> DynArray<T, D> {
 
         Self {
             dims,
-            data,
+            data: data.into_boxed_slice(),
         }
     }
 }
@@ -177,18 +177,6 @@ impl<'a, T, const D: usize> Iterator for Iter<'a, T, D> {
     }
 }
 
-impl<'a, T, const D: usize> IntoIterator for &'a DynArray<T, D> {
-    type Item = <Iter<'a, T, D> as Iterator>::Item;
-    type IntoIter = Iter<'a, T, D>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Iter {
-            arr: self,
-            index: [0; D]
-        }
-    }
-}
-
 impl<'a, T, const D: usize> Iterator for IterMut<'a, T, D> {
     type Item = ([usize; D], &'a mut T);
     
@@ -209,18 +197,6 @@ impl<'a, T, const D: usize> Iterator for IterMut<'a, T, D> {
     }
 }
 
-impl<'a, T, const D: usize> IntoIterator for &'a mut DynArray<T, D> {
-    type Item = <IterMut<'a, T, D> as Iterator>::Item;
-    type IntoIter = IterMut<'a, T, D>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        IterMut {
-            arr: self,
-            index: [0; D]
-        }
-    }
-}
-
 impl<T: Default, const D: usize> Iterator for IterOwned<T, D> {
     type Item = ([usize; D], T);
     
@@ -233,6 +209,30 @@ impl<T: Default, const D: usize> Iterator for IterOwned<T, D> {
         let ret = Some((*index, std::mem::take(self.arr.index_mut(*index))));
         next_index(index, self.arr.dims());
         ret
+    }
+}
+
+impl<'a, T, const D: usize> IntoIterator for &'a DynArray<T, D> {
+    type Item = <Iter<'a, T, D> as Iterator>::Item;
+    type IntoIter = Iter<'a, T, D>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter {
+            arr: self,
+            index: [0; D]
+        }
+    }
+}
+
+impl<'a, T, const D: usize> IntoIterator for &'a mut DynArray<T, D> {
+    type Item = <IterMut<'a, T, D> as Iterator>::Item;
+    type IntoIter = IterMut<'a, T, D>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IterMut {
+            arr: self,
+            index: [0; D]
+        }
     }
 }
 
